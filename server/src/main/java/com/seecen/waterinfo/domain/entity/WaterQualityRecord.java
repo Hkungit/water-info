@@ -1,7 +1,10 @@
 package com.seecen.waterinfo.domain.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.seecen.waterinfo.domain.enums.MonitoringStatus;
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,37 +20,31 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "water_quality_records")
+@TableName("water_quality_records")
 public class WaterQualityRecord extends BaseTimeEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @TableId(value = "id", type = IdType.INPUT)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "station_id", nullable = false)
-    private Station station;
+    @TableField("station_id")
+    private UUID stationId;
 
-    @Column(precision = 10, scale = 2)
     private BigDecimal ph;
 
-    @Column(name = "dissolved_oxygen", precision = 10, scale = 2)
+    @TableField("dissolved_oxygen")
     private BigDecimal dissolvedOxygen;
 
-    @Column(precision = 10, scale = 2)
     private BigDecimal turbidity;
 
-    @Column(precision = 10, scale = 2)
     private BigDecimal temperature;
 
-    @Column(precision = 10, scale = 2)
     private BigDecimal conductivity;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 16)
     private MonitoringStatus status = MonitoringStatus.NORMAL;
 
-    @Column(name = "recorded_at", nullable = false)
+    @TableField("recorded_at")
     private LocalDateTime recordedAt;
+
+    @TableField(exist = false)
+    private Station station;
 }

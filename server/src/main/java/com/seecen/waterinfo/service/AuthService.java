@@ -6,6 +6,7 @@ import com.seecen.waterinfo.dto.auth.LoginResponse;
 import com.seecen.waterinfo.dto.user.UserSummary;
 import com.seecen.waterinfo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,13 +26,15 @@ public class AuthService {
 
     @Transactional
     public LoginResponse login(LoginRequest request) {
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new IllegalArgumentException("用户名或密码错误"));
+        User user = userRepository.selectOne(new QueryWrapper<User>().eq("username", request.getUsername()));
+        if (user == null) {
+            throw new IllegalArgumentException("用户名或密码错误");
+        }
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new IllegalArgumentException("用户名或密码错误");
         }
         user.setLastLoginAt(LocalDateTime.now());
-        userRepository.save(user);
+        userRepository.updateById(user);
 
         String token = UUID.randomUUID().toString();
         sessions.put(token, user.getId());
@@ -53,8 +56,10 @@ public class AuthService {
 
     public LoginResponse refresh(String authHeader) {
         Long userId = requireUserId(authHeader);
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
+        User user = userRepository.selectById(userId);
+        if (user == null) {
+            throw new IllegalArgumentException("用户不存在");
+        }
         String token = UUID.randomUUID().toString();
         sessions.put(token, userId);
         return LoginResponse.builder()
@@ -67,8 +72,10 @@ public class AuthService {
 
     public UserSummary currentUser(String authHeader) {
         Long userId = requireUserId(authHeader);
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
+        User user = userRepository.selectById(userId);
+        if (user == null) {
+            throw new IllegalArgumentException("用户不存在");
+        }
         return toSummary(user);
     }
 
