@@ -1,86 +1,103 @@
 package com.seecen.waterinfo.service;
 
 import com.seecen.waterinfo.common.PageResponse;
+import com.seecen.waterinfo.domain.entity.Station;
 import com.seecen.waterinfo.domain.enums.StationStatus;
 import com.seecen.waterinfo.dto.station.StationRequest;
 import com.seecen.waterinfo.dto.station.StationResponse;
+import com.seecen.waterinfo.repository.StationRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class StationService {
 
+    private final StationRepository stationRepository;
+
     public PageResponse<StationResponse> list(int page, int size) {
-        List<StationResponse> stations = Arrays.asList(
-                StationResponse.builder()
-                        .id(UUID.fromString("550e8400-e29b-41d4-a716-446655440001"))
-                        .name("主站监测点")
-                        .location("北京市朝阳区")
-                        .latitude(BigDecimal.valueOf(39.9042))
-                        .longitude(BigDecimal.valueOf(116.4074))
-                        .description("主站监测站点")
-                        .status(StationStatus.ACTIVE)
-                        .createdAt(LocalDateTime.now().minusDays(5))
-                        .build(),
-                StationResponse.builder()
-                        .id(UUID.fromString("550e8400-e29b-41d4-a716-446655440002"))
-                        .name("副站监测点")
-                        .location("北京市海淀区")
-                        .latitude(BigDecimal.valueOf(39.9562))
-                        .longitude(BigDecimal.valueOf(116.3105))
-                        .description("辅监测站点")
-                        .status(StationStatus.ACTIVE)
-                        .createdAt(LocalDateTime.now().minusDays(4))
-                        .build()
-        );
-        return PageResponse.of(stations, stations.size(), 1, page, size);
+        PageRequest pageRequest = PageRequest.of(Math.max(page - 1, 0), size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Station> stations = stationRepository.findAll(pageRequest);
+        List<StationResponse> content = stations.getContent().stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+        return PageResponse.of(content, stations.getTotalElements(), stations.getTotalPages(), stations.getNumber() + 1, stations.getSize());
     }
 
     public StationResponse detail(UUID id) {
-        return StationResponse.builder()
-                .id(id)
-                .name("主站监测点")
-                .location("北京市朝阳区")
-                .latitude(BigDecimal.valueOf(39.9042))
-                .longitude(BigDecimal.valueOf(116.4074))
-                .description("主站监测站点")
-                .status(StationStatus.ACTIVE)
-                .createdAt(LocalDateTime.now().minusDays(5))
-                .build();
+        Station station = stationRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("站点不存在"));
+        return toResponse(station);
     }
 
+    @Transactional
     public StationResponse create(StationRequest request) {
-        return StationResponse.builder()
-                .id(UUID.randomUUID())
+        Station station = Station.builder()
                 .name(request.getName())
                 .location(request.getLocation())
                 .latitude(request.getLatitude())
                 .longitude(request.getLongitude())
                 .description(request.getDescription())
-                .status(request.getStatus())
-                .createdAt(LocalDateTime.now())
+                .status(request.getStatus() != null ? request.getStatus() : StationStatus.ACTIVE)
                 .build();
+        Station saved = stationRepository.save(station);
+        return toResponse(saved);
     }
 
+    @Transactional
     public void update(UUID id, StationRequest request) {
-        // TODO: implement persistence update
+        Station station = stationRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("站点不存在"));
+        station.setName(request.getName());
+        station.setLocation(request.getLocation());
+        station.setLatitude(request.getLatitude());
+        station.setLongitude(request.getLongitude());
+        station.setDescription(request.getDescription());
+        station.setStatus(request.getStatus() != null ? request.getStatus() : station.getStatus());
+        stationRepository.save(station);
     }
 
+    @Transactional
     public void delete(UUID id) {
-        // TODO: implement delete
+        try {
+            stationRepository.deleteById(id);
+        } catch (EmptyResultDataAccessException ex) {
+            throw new IllegalArgumentException("站点不存在");
+        }
     }
 
-    public Object statistics() {
-        return new Object() {
-            public final int totalStations = 5;
-            public final int activeStations = 4;
-            public final int inactiveStations = 0;
-            public final int maintenanceStations = 1;
-        };
+    public Map<String, Long> statistics() {
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("totalStations", stationRepository.count());
+        stats.put("activeStations", stationRepository.countByStatus(StationStatus.ACTIVE));
+        stats.put("inactiveStations", stationRepository.countByStatus(StationStatus.INACTIVE));
+        stats.put("maintenanceStations", stationRepository.countByStatus(StationStatus.MAINTENANCE));
+        return stats;
+    }
+
+    private StationResponse toResponse(Station station) {
+        return StationResponse.builder()
+                .id(station.getId())
+                .name(station.getName())
+                .location(station.getLocation())
+                .latitude(station.getLatitude())
+                .longitude(station.getLongitude())
+                .description(station.getDescription())
+                .status(station.getStatus())
+                .createdAt(station.getCreatedAt())
+                .updatedAt(station.getUpdatedAt())
+                .build();
     }
 }

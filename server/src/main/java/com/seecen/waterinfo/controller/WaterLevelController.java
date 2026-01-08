@@ -44,7 +44,7 @@ public class WaterLevelController {
     }
 
     @GetMapping("/statistics")
-    public ApiResponse<Object> statistics() {
-        return ApiResponse.success(monitoringService.waterLevelStats());
+    public ApiResponse<Object> statistics(@RequestParam(required = false) String stationId) {
+        return ApiResponse.success(monitoringService.waterLevelStats(stationId));
     }
 }

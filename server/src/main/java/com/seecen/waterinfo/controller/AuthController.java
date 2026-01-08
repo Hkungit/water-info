@@ -9,10 +9,9 @@ import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/auth")
@@ -30,22 +29,18 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ApiResponse<Void> logout() {
+    public ApiResponse<Void> logout(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        authService.logout(authHeader);
         return ApiResponse.success("logged out", null);
     }
 
     @GetMapping("/me")
-    public ApiResponse<UserSummary> currentUser() {
-        return ApiResponse.success(authService.currentUser());
+    public ApiResponse<UserSummary> currentUser(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        return ApiResponse.success(authService.currentUser(authHeader));
     }
 
     @PostMapping("/refresh")
-    public ApiResponse<LoginResponse> refresh() {
-        LoginResponse response = LoginResponse.builder()
-                .token("mock-token-" + UUID.randomUUID())
-                .tokenType("Bearer")
-                .expiresIn(86400)
-                .build();
-        return ApiResponse.success(response);
+    public ApiResponse<LoginResponse> refresh(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        return ApiResponse.success(authService.refresh(authHeader));
     }
 }

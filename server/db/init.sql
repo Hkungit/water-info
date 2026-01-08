@@ -105,9 +105,39 @@ CREATE TABLE IF NOT EXISTS alarms (
 
 -- Seed sample data (UUID literals are stored as BINARY(16))
 INSERT INTO users (username, password, real_name, email, phone, role, status)
-VALUES ('admin', '$2a$10$CwTycUXWue0Thq9StjUM0uJ8Y4ZC/7gv2Fne5DE5pSxbFzNw2K6yW', '系统管理员', 'admin@waterinfo.com', '13800138000', 'ADMIN', 1)
+VALUES
+  ('admin', '$2a$10$CwTycUXWue0Thq9StjUM0uJ8Y4ZC/7gv2Fne5DE5pSxbFzNw2K6yW', 'System Admin', 'admin@waterinfo.com', '13800138000', 'ADMIN', 1),
+  ('operator1', '$2a$10$CwTycUXWue0Thq9StjUM0uJ8Y4ZC/7gv2Fne5DE5pSxbFzNw2K6yW', 'Field Operator', 'operator1@waterinfo.com', '13800138001', 'OPERATOR', 1)
 ON DUPLICATE KEY UPDATE username = username;
 
 INSERT INTO stations (id, name, location, latitude, longitude, description, status)
-VALUES (UNHEX(REPLACE('550e8400-e29b-41d4-a716-446655440001','-','')), '主站监测点', '北京市朝阳区', 39.904200, 116.407400, '主站监测站点', 'ACTIVE')
-ON DUPLICATE KEY UPDATE name = name;
+VALUES
+  (UNHEX(REPLACE('550e8400-e29b-41d4-a716-446655440001','-','')), 'Main Station', 'Beijing - Chaoyang', 39.904200, 116.407400, 'Primary monitoring station', 'ACTIVE'),
+  (UNHEX(REPLACE('550e8400-e29b-41d4-a716-446655440002','-','')), 'East Station', 'Beijing - Tongzhou', 39.909700, 116.663800, 'Eastern river monitoring', 'ACTIVE'),
+  (UNHEX(REPLACE('550e8400-e29b-41d4-a716-446655440003','-','')), 'North Station', 'Beijing - Changping', 40.213000, 116.239500, 'Reservoir monitoring station', 'MAINTENANCE')
+ON DUPLICATE KEY UPDATE name = VALUES(name), location = VALUES(location), status = VALUES(status);
+
+INSERT INTO water_level_records (id, station_id, current_level, warning_level, danger_level, status, recorded_at)
+VALUES
+  (UNHEX(REPLACE('660e8400-e29b-41d4-a716-446655440001','-','')), UNHEX(REPLACE('550e8400-e29b-41d4-a716-446655440001','-','')), 12.50, 15.00, 18.00, 'NORMAL', '2024-01-01 12:00:00'),
+  (UNHEX(REPLACE('660e8400-e29b-41d4-a716-446655440002','-','')), UNHEX(REPLACE('550e8400-e29b-41d4-a716-446655440002','-','')), 10.20, 14.00, 17.00, 'NORMAL', '2024-01-01 12:10:00'),
+  (UNHEX(REPLACE('660e8400-e29b-41d4-a716-446655440003','-','')), UNHEX(REPLACE('550e8400-e29b-41d4-a716-446655440003','-','')), 16.20, 15.00, 18.00, 'WARNING', '2024-01-01 11:50:00')
+ON DUPLICATE KEY UPDATE recorded_at = VALUES(recorded_at), current_level = VALUES(current_level), status = VALUES(status);
+
+INSERT INTO flow_records (id, station_id, flow_rate, velocity, status, recorded_at)
+VALUES
+  (UNHEX(REPLACE('770e8400-e29b-41d4-a716-446655440001','-','')), UNHEX(REPLACE('550e8400-e29b-41d4-a716-446655440001','-','')), 150.25, 2.50, 'NORMAL', '2024-01-01 12:05:00'),
+  (UNHEX(REPLACE('770e8400-e29b-41d4-a716-446655440002','-','')), UNHEX(REPLACE('550e8400-e29b-41d4-a716-446655440002','-','')), 98.60, 1.80, 'NORMAL', '2024-01-01 12:08:00')
+ON DUPLICATE KEY UPDATE recorded_at = VALUES(recorded_at), flow_rate = VALUES(flow_rate), status = VALUES(status);
+
+INSERT INTO water_quality_records (id, station_id, ph, dissolved_oxygen, turbidity, temperature, conductivity, status, recorded_at)
+VALUES
+  (UNHEX(REPLACE('880e8400-e29b-41d4-a716-446655440001','-','')), UNHEX(REPLACE('550e8400-e29b-41d4-a716-446655440001','-','')), 7.20, 8.50, 3.20, 22.50, 450.0, 'NORMAL', '2024-01-01 12:00:00'),
+  (UNHEX(REPLACE('880e8400-e29b-41d4-a716-446655440002','-','')), UNHEX(REPLACE('550e8400-e29b-41d4-a716-446655440002','-','')), 6.50, 7.80, 5.10, 21.30, 520.0, 'WARNING', '2024-01-01 12:12:00')
+ON DUPLICATE KEY UPDATE recorded_at = VALUES(recorded_at), ph = VALUES(ph), status = VALUES(status);
+
+INSERT INTO alarms (id, station_id, alarm_type, severity, message, status, resolved_at, resolved_by, created_at)
+VALUES
+  (UNHEX(REPLACE('990e8400-e29b-41d4-a716-446655440001','-','')), UNHEX(REPLACE('550e8400-e29b-41d4-a716-446655440003','-','')), 'WATER_LEVEL_WARNING', 'HIGH', 'Water level above warning at North Station', 'ACTIVE', NULL, NULL, '2024-01-01 11:55:00'),
+  (UNHEX(REPLACE('990e8400-e29b-41d4-a716-446655440002','-','')), UNHEX(REPLACE('550e8400-e29b-41d4-a716-446655440002','-','')), 'WATER_QUALITY_ABNORMAL', 'MEDIUM', 'pH below normal range at East Station', 'RESOLVED', '2024-01-01 12:20:00', 2, '2024-01-01 11:50:00')
+ON DUPLICATE KEY UPDATE message = VALUES(message), status = VALUES(status), resolved_at = VALUES(resolved_at), resolved_by = VALUES(resolved_by);
