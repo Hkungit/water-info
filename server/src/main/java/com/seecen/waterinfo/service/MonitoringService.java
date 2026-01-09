@@ -19,6 +19,9 @@ import com.seecen.waterinfo.repository.StationRepository;
 import com.seecen.waterinfo.repository.WaterLevelRecordRepository;
 import com.seecen.waterinfo.repository.WaterQualityRecordRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +45,7 @@ public class MonitoringService {
     private final WaterQualityRecordRepository waterQualityRecordRepository;
     private final StationRepository stationRepository;
 
+    @Cacheable(cacheNames = "monitoring-latest-water-levels", key = "#stationId != null ? #stationId : 'all'")
     public List<WaterLevelResponse> latestWaterLevels(String stationId) {
         return resolveStations(stationId).stream()
                 .map(station -> {
@@ -55,6 +59,7 @@ public class MonitoringService {
                 .collect(Collectors.toList());
     }
 
+    @Cacheable(cacheNames = "monitoring-water-level-history", key = "#stationId + ':page=' + #page + ':size=' + #size")
     public PageResponse<WaterLevelResponse> waterLevelHistory(String stationId, int page, int size) {
         UUID stationUuid = parseUuid(stationId, "站点ID不合法");
         Page<WaterLevelRecord> pageRequest = new Page<>(Math.max(page, 1), size);
@@ -68,6 +73,7 @@ public class MonitoringService {
         return PageResponse.of(content, records.getTotal(), (int) records.getPages(), (int) records.getCurrent(), (int) records.getSize());
     }
 
+    @Cacheable(cacheNames = "monitoring-latest-water-level-one")
     public WaterLevelResponse latestWaterLevelOne() {
         WaterLevelRecord record = waterLevelRecordRepository.selectOne(new QueryWrapper<WaterLevelRecord>()
                 .orderByDesc("recorded_at")
@@ -80,6 +86,12 @@ public class MonitoringService {
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "monitoring-latest-water-levels", allEntries = true),
+            @CacheEvict(cacheNames = "monitoring-latest-water-level-one", allEntries = true),
+            @CacheEvict(cacheNames = "monitoring-water-level-history", allEntries = true),
+            @CacheEvict(cacheNames = "monitoring-water-level-stats", allEntries = true)
+    })
     public WaterLevelResponse addWaterLevel(WaterLevelRequest request) {
         Station station = getStation(request.getStationId());
         LocalDateTime recordedAt = request.getRecordedAt() != null ? request.getRecordedAt() : LocalDateTime.now();
@@ -97,6 +109,7 @@ public class MonitoringService {
         return toWaterLevelResponse(record, station);
     }
 
+    @Cacheable(cacheNames = "monitoring-water-level-stats", key = "#stationId != null ? #stationId : 'all'")
     public Map<String, Object> waterLevelStats(String stationId) {
         List<WaterLevelRecord> records = stationId != null && !stationId.isBlank()
                 ? waterLevelRecordRepository.selectList(new QueryWrapper<WaterLevelRecord>()
@@ -131,6 +144,7 @@ public class MonitoringService {
         return stats;
     }
 
+    @Cacheable(cacheNames = "monitoring-latest-flow-records", key = "#stationId != null ? #stationId : 'all'")
     public List<FlowRecordResponse> latestFlowRecords(String stationId) {
         return resolveStations(stationId).stream()
                 .map(station -> {
@@ -144,6 +158,7 @@ public class MonitoringService {
                 .collect(Collectors.toList());
     }
 
+    @Cacheable(cacheNames = "monitoring-flow-history", key = "#stationId + ':page=' + #page + ':size=' + #size")
     public PageResponse<FlowRecordResponse> flowHistory(String stationId, int page, int size) {
         UUID stationUuid = parseUuid(stationId, "站点ID不合法");
         Page<FlowRecord> pageRequest = new Page<>(Math.max(page, 1), size);
@@ -157,6 +172,7 @@ public class MonitoringService {
         return PageResponse.of(content, records.getTotal(), (int) records.getPages(), (int) records.getCurrent(), (int) records.getSize());
     }
 
+    @Cacheable(cacheNames = "monitoring-latest-flow-record-one")
     public FlowRecordResponse latestFlowRecordOne() {
         FlowRecord record = flowRecordRepository.selectOne(new QueryWrapper<FlowRecord>()
                 .orderByDesc("recorded_at")
@@ -169,6 +185,12 @@ public class MonitoringService {
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "monitoring-latest-flow-records", allEntries = true),
+            @CacheEvict(cacheNames = "monitoring-latest-flow-record-one", allEntries = true),
+            @CacheEvict(cacheNames = "monitoring-flow-history", allEntries = true),
+            @CacheEvict(cacheNames = "monitoring-flow-stats", allEntries = true)
+    })
     public FlowRecordResponse addFlowRecord(FlowRecordRequest request) {
         Station station = getStation(request.getStationId());
         LocalDateTime recordedAt = request.getRecordedAt() != null ? request.getRecordedAt() : LocalDateTime.now();
@@ -184,6 +206,7 @@ public class MonitoringService {
         return toFlowResponse(record, station);
     }
 
+    @Cacheable(cacheNames = "monitoring-flow-stats")
     public Map<String, Object> flowStats() {
         List<FlowRecord> records = flowRecordRepository.selectList(null);
         Map<String, Object> stats = new HashMap<>();
@@ -194,6 +217,7 @@ public class MonitoringService {
         return stats;
     }
 
+    @Cacheable(cacheNames = "monitoring-latest-water-quality", key = "#stationId != null ? #stationId : 'all'")
     public List<WaterQualityResponse> latestWaterQuality(String stationId) {
         return resolveStations(stationId).stream()
                 .map(station -> {
@@ -207,6 +231,7 @@ public class MonitoringService {
                 .collect(Collectors.toList());
     }
 
+    @Cacheable(cacheNames = "monitoring-water-quality-history", key = "#stationId + ':page=' + #page + ':size=' + #size")
     public PageResponse<WaterQualityResponse> waterQualityHistory(String stationId, int page, int size) {
         UUID stationUuid = parseUuid(stationId, "站点ID不合法");
         Page<WaterQualityRecord> pageRequest = new Page<>(Math.max(page, 1), size);
@@ -221,6 +246,10 @@ public class MonitoringService {
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "monitoring-latest-water-quality", allEntries = true),
+            @CacheEvict(cacheNames = "monitoring-water-quality-history", allEntries = true)
+    })
     public WaterQualityResponse addWaterQuality(WaterQualityRequest request) {
         Station station = getStation(request.getStationId());
         LocalDateTime recordedAt = request.getRecordedAt() != null ? request.getRecordedAt() : LocalDateTime.now();
