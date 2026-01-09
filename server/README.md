@@ -1,6 +1,6 @@
 # Water Info Backend (Spring Boot + MySQL)
 
-基于 Spring Boot 3 的后端脚手架，用于替换原有 Supabase，实现 `/api/v1` 下的接口。当前包含实体、仓储、控制器和示例数据返回，后续可替换为真实的持久化与鉴权逻辑。
+基于 Spring Boot 3 的后端服务，实现 `/api/v1` 下的接口，包含实体、仓储、控制器、示例数据以及基础鉴权与权限管理。
 
 ## 环境要求
 - JDK 17+
@@ -41,9 +41,8 @@ mysql -u <user> -p < server/db/init.sql
 - `common`：统一返回体、异常处理。
 
 ## 认证与安全
-目前 Security 放开所有请求，并预置 PasswordEncoder；`jwt.secret/expiration` 为占位。后续需要：
-- 实现登录鉴权、签发 JWT、请求过滤。
-- 根据角色（admin/operator/viewer）配置访问控制。
+- 已接入基于 Token 的登录鉴权，并通过角色（admin/operator/viewer）控制接口访问权限。
+- 使用 Spring Security 过滤器从 `Authorization: Bearer <token>` 解析会话并注入认证用户。
 
 ## 下一步建议
 - 接入真实的 MySQL 表结构与数据流，完善 Service 层。
