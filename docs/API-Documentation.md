@@ -18,7 +18,7 @@
 API 版本: v1
 文档日期: 2024年1月
 Base URL: http://localhost:8080/api/v1
-API文档地址: http://localhost:8080/swagger-ui.html
+API文档地址: http://localhost:8080/api/v1/doc.html
 认证方式
 所有 API 请求需要在 Header 中携带 Token：
 
@@ -1289,7 +1289,7 @@ viewer: 访客
 技术支持
 如有问题，请联系系统管理员或查看在线文档。
 
-在线API文档: http://localhost:8080/swagger-ui.html
+在线API文档: http://localhost:8080/api/v1/doc.html
 
 接口统计
 模块	接口数量
