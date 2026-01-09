@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -68,6 +69,19 @@ public class AuthService {
                 .expiresIn(86400)
                 .user(toSummary(user))
                 .build();
+    }
+
+    public Optional<User> findUserByToken(String authHeader) {
+        String token = extractToken(authHeader);
+        if (token == null) {
+            return Optional.empty();
+        }
+        Long userId = sessions.get(token);
+        if (userId == null) {
+            return Optional.empty();
+        }
+        User user = userRepository.selectById(userId);
+        return Optional.ofNullable(user);
     }
 
     public UserSummary currentUser(String authHeader) {

@@ -3,8 +3,8 @@
 Spring Boot + MySQL 后端（`server/`）和 Vue 3 前端（`backend/`），用于水文监测平台。接口定义见 `docs/API-Documentation.md`，后端统一前缀 `/api/v1`。
 
 ## 项目结构
-- `server/`：Spring Boot 3 后端，JPA + Security（待完善 JWT），MySQL 持久化，Swagger。
-- `backend/`：Vue 3 + TypeScript + Element Plus 前端，调用后端 REST 接口（不再使用 Supabase）。
+- `server/`：Spring Boot 3 后端，MyBatis-Plus + Security，MySQL 持久化，Swagger。
+- `backend/`：Vue 3 + TypeScript + Element Plus 前端，包含登录与权限管理页面。
 - `docs/`：接口文档。
 
 ## 运行要求
@@ -41,7 +41,7 @@ npm run build
 开发默认端口 `5173`。
 
 ## 认证与跨域
-- 目前后端放行所有路由，待接入 JWT；已启用 CORS，允许 `http://localhost:5173`。
+- 后端使用基于 Token 的鉴权与角色权限控制（管理员/运维/访客）。
 - 前端登录请求 `/auth/login`，成功后本地存储 Token 并在请求头附带 `Authorization: Bearer <token>`。
 
 ## 其它

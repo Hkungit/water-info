@@ -1,6 +1,7 @@
 package com.seecen.waterinfo.controller;
 
 import com.seecen.waterinfo.common.ApiResponse;
+import com.seecen.waterinfo.config.security.UserPrincipal;
 import com.seecen.waterinfo.common.PageResponse;
 import com.seecen.waterinfo.domain.enums.AlarmStatus;
 import com.seecen.waterinfo.dto.alarm.AlarmResponse;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import java.util.UUID;
 
@@ -43,8 +45,9 @@ public class AlarmController {
     }
 
     @PutMapping("/{id}/resolve")
-    public ApiResponse<AlarmResponse> resolve(@PathVariable UUID id) {
-        return ApiResponse.success("报警处理成功", alarmService.resolve(id, null));
+    public ApiResponse<AlarmResponse> resolve(@PathVariable UUID id, @AuthenticationPrincipal UserPrincipal principal) {
+        Long resolverId = principal == null ? null : principal.getId();
+        return ApiResponse.success("报警处理成功", alarmService.resolve(id, resolverId));
     }
 
     @GetMapping("/statistics")
