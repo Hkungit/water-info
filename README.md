@@ -23,7 +23,7 @@ mysql -u <user> -p < server/db/init.sql
 cd server
 mvn spring-boot:run
 ```
-默认端口 `8080`，上下文 `/api/v1`；Swagger: `http://localhost:8080/api/v1/swagger-ui.html`。
+默认端口 `8080`，上下文 `/api/v1`；Knife4j: `http://localhost:8080/api/v1/doc.html`。
 
 ## 前端启动（backend）
 1) 复制并修改环境变量：

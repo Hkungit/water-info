@@ -22,7 +22,7 @@ mvn spring-boot:run
 默认端口 `8080`，上下文路径 `/api/v1`。
 
 3) 查看接口文档：
-- Swagger UI: `http://localhost:8080/api/v1/swagger-ui.html`
+- Knife4j UI: `http://localhost:8080/api/v1/doc.html`
 - OpenAPI JSON: `http://localhost:8080/api/v1/v3/api-docs`
 
 4) 初始化数据：
