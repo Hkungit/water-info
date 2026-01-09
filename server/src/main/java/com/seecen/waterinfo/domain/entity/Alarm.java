@@ -1,9 +1,12 @@
 package com.seecen.waterinfo.domain.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.seecen.waterinfo.domain.enums.AlarmSeverity;
 import com.seecen.waterinfo.domain.enums.AlarmStatus;
 import com.seecen.waterinfo.domain.enums.AlarmType;
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,37 +21,33 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "alarms")
+@TableName("alarms")
 public class Alarm extends BaseTimeEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @TableId(value = "id", type = IdType.INPUT)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "station_id", nullable = false)
-    private Station station;
+    @TableField("station_id")
+    private UUID stationId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "alarm_type", nullable = false, length = 32)
+    @TableField("alarm_type")
     private AlarmType alarmType;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 16)
     private AlarmSeverity severity;
 
-    @Column(nullable = false, length = 512)
     private String message;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 16)
     private AlarmStatus status = AlarmStatus.ACTIVE;
 
-    @Column(name = "resolved_at")
+    @TableField("resolved_at")
     private LocalDateTime resolvedAt;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "resolved_by")
+    @TableField("resolved_by")
+    private Long resolvedById;
+
+    @TableField(exist = false)
+    private Station station;
+
+    @TableField(exist = false)
     private User resolvedBy;
 }

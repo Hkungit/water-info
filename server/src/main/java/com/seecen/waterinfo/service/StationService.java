@@ -1,6 +1,8 @@
 package com.seecen.waterinfo.service;
 
 import com.seecen.waterinfo.common.PageResponse;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.seecen.waterinfo.domain.entity.Station;
 import com.seecen.waterinfo.domain.enums.StationStatus;
 import com.seecen.waterinfo.dto.station.StationRequest;
@@ -8,9 +10,6 @@ import com.seecen.waterinfo.dto.station.StationResponse;
 import com.seecen.waterinfo.repository.StationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,23 +27,28 @@ public class StationService {
     private final StationRepository stationRepository;
 
     public PageResponse<StationResponse> list(int page, int size) {
-        PageRequest pageRequest = PageRequest.of(Math.max(page - 1, 0), size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<Station> stations = stationRepository.findAll(pageRequest);
-        List<StationResponse> content = stations.getContent().stream()
+        Page<Station> pageRequest = new Page<>(Math.max(page, 1), size);
+        QueryWrapper<Station> wrapper = new QueryWrapper<>();
+        wrapper.orderByDesc("created_at");
+        Page<Station> stations = stationRepository.selectPage(pageRequest, wrapper);
+        List<StationResponse> content = stations.getRecords().stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
-        return PageResponse.of(content, stations.getTotalElements(), stations.getTotalPages(), stations.getNumber() + 1, stations.getSize());
+        return PageResponse.of(content, stations.getTotal(), (int) stations.getPages(), (int) stations.getCurrent(), (int) stations.getSize());
     }
 
     public StationResponse detail(UUID id) {
-        Station station = stationRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("站点不存在"));
+        Station station = stationRepository.selectById(id);
+        if (station == null) {
+            throw new IllegalArgumentException("站点不存在");
+        }
         return toResponse(station);
     }
 
     @Transactional
     public StationResponse create(StationRequest request) {
         Station station = Station.builder()
+                .id(UUID.randomUUID())
                 .name(request.getName())
                 .location(request.getLocation())
                 .latitude(request.getLatitude())
@@ -52,27 +56,32 @@ public class StationService {
                 .description(request.getDescription())
                 .status(request.getStatus() != null ? request.getStatus() : StationStatus.ACTIVE)
                 .build();
-        Station saved = stationRepository.save(station);
-        return toResponse(saved);
+        stationRepository.insert(station);
+        return toResponse(station);
     }
 
     @Transactional
     public void update(UUID id, StationRequest request) {
-        Station station = stationRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("站点不存在"));
+        Station station = stationRepository.selectById(id);
+        if (station == null) {
+            throw new IllegalArgumentException("站点不存在");
+        }
         station.setName(request.getName());
         station.setLocation(request.getLocation());
         station.setLatitude(request.getLatitude());
         station.setLongitude(request.getLongitude());
         station.setDescription(request.getDescription());
         station.setStatus(request.getStatus() != null ? request.getStatus() : station.getStatus());
-        stationRepository.save(station);
+        stationRepository.updateById(station);
     }
 
     @Transactional
     public void delete(UUID id) {
         try {
-            stationRepository.deleteById(id);
+            int deleted = stationRepository.deleteById(id);
+            if (deleted == 0) {
+                throw new EmptyResultDataAccessException(1);
+            }
         } catch (EmptyResultDataAccessException ex) {
             throw new IllegalArgumentException("站点不存在");
         }
@@ -80,10 +89,10 @@ public class StationService {
 
     public Map<String, Long> statistics() {
         Map<String, Long> stats = new HashMap<>();
-        stats.put("totalStations", stationRepository.count());
-        stats.put("activeStations", stationRepository.countByStatus(StationStatus.ACTIVE));
-        stats.put("inactiveStations", stationRepository.countByStatus(StationStatus.INACTIVE));
-        stats.put("maintenanceStations", stationRepository.countByStatus(StationStatus.MAINTENANCE));
+        stats.put("totalStations", stationRepository.selectCount(null));
+        stats.put("activeStations", stationRepository.selectCount(new QueryWrapper<Station>().eq("status", StationStatus.ACTIVE)));
+        stats.put("inactiveStations", stationRepository.selectCount(new QueryWrapper<Station>().eq("status", StationStatus.INACTIVE)));
+        stats.put("maintenanceStations", stationRepository.selectCount(new QueryWrapper<Station>().eq("status", StationStatus.MAINTENANCE)));
         return stats;
     }
 

@@ -1,11 +1,9 @@
 package com.seecen.waterinfo.repository;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.seecen.waterinfo.domain.entity.Station;
-import com.seecen.waterinfo.domain.enums.StationStatus;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.apache.ibatis.annotations.Mapper;
 
-import java.util.UUID;
-
-public interface StationRepository extends JpaRepository<Station, UUID> {
-    long countByStatus(StationStatus status);
+@Mapper
+public interface StationRepository extends BaseMapper<Station> {
 }

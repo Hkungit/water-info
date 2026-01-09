@@ -1,7 +1,9 @@
 package com.seecen.waterinfo.domain.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.seecen.waterinfo.domain.enums.StationStatus;
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,30 +18,21 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "stations")
+@TableName("stations")
 public class Station extends BaseTimeEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @TableId(value = "id", type = IdType.INPUT)
     private UUID id;
 
-    @Column(nullable = false, length = 128)
     private String name;
 
-    @Column(length = 256)
     private String location;
 
-    @Column(precision = 10, scale = 6)
     private BigDecimal latitude;
 
-    @Column(precision = 10, scale = 6)
     private BigDecimal longitude;
 
-    @Column(length = 512)
     private String description;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 16)
     private StationStatus status = StationStatus.ACTIVE;
 }
