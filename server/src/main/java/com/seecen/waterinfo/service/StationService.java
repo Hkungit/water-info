@@ -9,6 +9,9 @@ import com.seecen.waterinfo.dto.station.StationRequest;
 import com.seecen.waterinfo.dto.station.StationResponse;
 import com.seecen.waterinfo.repository.StationRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +29,7 @@ public class StationService {
 
     private final StationRepository stationRepository;
 
+    @Cacheable(cacheNames = "stations", key = "'page=' + #page + ':size=' + #size")
     public PageResponse<StationResponse> list(int page, int size) {
         Page<Station> pageRequest = new Page<>(Math.max(page, 1), size);
         QueryWrapper<Station> wrapper = new QueryWrapper<>();
@@ -37,6 +41,7 @@ public class StationService {
         return PageResponse.of(content, stations.getTotal(), (int) stations.getPages(), (int) stations.getCurrent(), (int) stations.getSize());
     }
 
+    @Cacheable(cacheNames = "station-detail", key = "#id")
     public StationResponse detail(UUID id) {
         Station station = stationRepository.selectById(id);
         if (station == null) {
@@ -46,6 +51,11 @@ public class StationService {
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "stations", allEntries = true),
+            @CacheEvict(cacheNames = "station-detail", allEntries = true),
+            @CacheEvict(cacheNames = "station-stats", allEntries = true)
+    })
     public StationResponse create(StationRequest request) {
         Station station = Station.builder()
                 .id(UUID.randomUUID())
@@ -61,6 +71,11 @@ public class StationService {
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "stations", allEntries = true),
+            @CacheEvict(cacheNames = "station-detail", key = "#id"),
+            @CacheEvict(cacheNames = "station-stats", allEntries = true)
+    })
     public void update(UUID id, StationRequest request) {
         Station station = stationRepository.selectById(id);
         if (station == null) {
@@ -76,6 +91,11 @@ public class StationService {
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "stations", allEntries = true),
+            @CacheEvict(cacheNames = "station-detail", key = "#id"),
+            @CacheEvict(cacheNames = "station-stats", allEntries = true)
+    })
     public void delete(UUID id) {
         try {
             int deleted = stationRepository.deleteById(id);
@@ -87,6 +107,7 @@ public class StationService {
         }
     }
 
+    @Cacheable(cacheNames = "station-stats")
     public Map<String, Long> statistics() {
         Map<String, Long> stats = new HashMap<>();
         stats.put("totalStations", stationRepository.selectCount(null));
